@@ -16,14 +16,14 @@ nlbw -c csv -g ip,mac -o ip | tr -d '"' | tail -n +2 > /tmp/nlbwmon.out
 
 #---------------------------------------------------------------------------------------------------------#
 # Check if internet-outage.sh is running, if not start it.
-if ps | grep  "internet-outage.sh" |  grep -v "grep" > /dev/null
-then
-    logger "internet-outage.sh is running"
-else
-    # If it's not running, start it
-    logger "internet-outage.sh is not running. Starting it now..."
-    /usr/bin/internet-outage.sh &
-fi
+#if ps | grep  "internet-outage.sh" |  grep -v "grep" > /dev/null
+#then
+#    logger "internet-outage.sh is running"
+#else
+#    # If it's not running, start it
+#    logger "internet-outage.sh is not running. Starting it now..."
+#    /usr/bin/internet-outage.sh &
+#fi
 
 #---------------------------------------------------------------------------------------------------------#
 #####Run vnstat and parse output
