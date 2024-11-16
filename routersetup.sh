@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # === Please set the IP address to point to your Home Server (Where Docker is installed) ============
-HOMESERVER="10.0.5.5"
+HOMESERVER="10.1.1.25"
 echo "Using IP Address: ${HOMESERVER} for HomeServer (where Docker is installed)"
 
 # === Set Custom Alias for clear as cls ============
@@ -16,7 +16,7 @@ EOF
  opkg update
  
 # List of software to check and install
-software="netperf openssh-sftp-server vnstat2 vnstati2 luci-app-vnstat2 netifyd collectd collectd-mod-iptables collectd-mod-ping luci-app-statistics collectd-mod-dhcpleases prometheus prometheus-node-exporter-lua prometheus-node-exporter-lua-nat_traffic prometheus-node-exporter-lua-openwrt prometheus-node-exporter-lua-uci_dhcp_host prometheus-node-exporter-lua-wifi prometheus-node-exporter-lua-wifi_stations"
+software="netperf openssh-sftp-server vnstat2 vnstati2 luci-app-vnstat2 netifyd collectd collectd-mod-iptables collectd-mod-ping luci-app-statistics collectd-mod-dhcpleases prometheus-node-exporter-lua prometheus-node-exporter-lua-nat_traffic prometheus-node-exporter-lua-netstat prometheus-node-exporter-lua-openwrt prometheus-node-exporter-lua-uci_dhcp_host prometheus-node-exporter-lua-wifi prometheus-node-exporter-lua-wifi_stations"
 
 
 # Loop through the list of software
@@ -61,20 +61,20 @@ done
  
 
 #Changing vnstat backup location to SD Card.
-dt=$(date '+%d%m%Y%H%M%S');
-DatabaseDir "/var/lib/vnstat"
-DIR=/tmp/mountd/disk1_part1
-if [[ -d "$DIR" ]]; then
-    echo "$DIR directory exists."
-    echo "Backing up /etc/vnstat.conf.$dt"
-    cp /etc/vnstat.conf /etc/vnstat.conf.$dt
-    sed -i 's/;DatabaseDir /DatabaseDir /g' /etc/vnstat.conf
-    sed -i 's,/var/lib/vnstat,/tmp/mountd/disk1_part1/vnstat,g' /etc/vnstat.conf
-    #Change VNStatDB save time from 5 mins to 1 min
-    sed -i 's/;SaveInterval 5 /;SaveInterval 1 /g' /etc/vnstat.conf
-    else
-  echo "$DIR directory does not exist."
-fi
+#dt=$(date '+%d%m%Y%H%M%S');
+#DatabaseDir "/var/lib/vnstat"
+#DIR=/tmp/mountd/disk1_part1
+#if [[ -d "$DIR" ]]; then
+#    echo "$DIR directory exists."
+#    echo "Backing up /etc/vnstat.conf.$dt"
+#    cp /etc/vnstat.conf /etc/vnstat.conf.$dt
+#    sed -i 's/;DatabaseDir /DatabaseDir /g' /etc/vnstat.conf
+#    sed -i 's,/var/lib/vnstat,/tmp/mountd/disk1_part1/vnstat,g' /etc/vnstat.conf
+#    #Change VNStatDB save time from 5 mins to 1 min
+#    sed -i 's/;SaveInterval 5 /;SaveInterval 1 /g' /etc/vnstat.conf
+#    else
+#  echo "$DIR directory does not exist."
+#fi
 
  
  
@@ -89,15 +89,15 @@ fi
  echo 'Copying shell scripts and files from Github to Router'
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/speedtest.sh -O /usr/bin/speedtest.sh && chmod +x /usr/bin/speedtest.sh
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/15-second-script.sh -O /usr/bin/15-second-script.sh && chmod +x /usr/bin/15-second-script.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/1-minute-script.sh -O /usr/bin/1-minute-script.sh && chmod +x /usr/bin/1-minute-script.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/1-minute-script.sh && chmod +x /usr/bin/1-minute-script.sh
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/1-hour-script.sh -O /usr/bin/1-hour-script.sh && chmod +x /usr/bin/1-hour-script.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/5-minute-script.sh -O /usr/bin/5-minute-script.sh && chmod +x /usr/bin/5-minute-script.sh
+ #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/5-minute-script.sh -O /usr/bin/5-minute-script.sh && chmod +x /usr/bin/5-minute-script.sh
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/12am-script.sh -O /usr/bin/12am-script.sh && chmod +x /usr/bin/12am-script.sh
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/99-new-device -O /etc/hotplug.d/dhcp/99-new-device 
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/device-status-ping.sh -O /usr/bin/device-status-ping.sh && chmod +x /usr/bin/device-status-ping.sh
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/packet-loss.sh -O /usr/bin/packet-loss.sh && chmod +x /usr/bin/packet-loss.sh
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/new_device.sh -O /usr/bin/new_device.sh && chmod +x /usr/bin/new_device.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/internet-outage.sh -O /usr/bin/internet-outage.sh && chmod +x /usr/bin/internet-outage.sh
+ #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/internet-outage.sh -O /usr/bin/internet-outage.sh && chmod +x /usr/bin/internet-outage.sh
 
 
  echo 'Copying custom LUA Files from GIT to router'
@@ -109,7 +109,7 @@ fi
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/vnstatmonth.lua -O /usr/lib/lua/prometheus-collectors/vnstatmonth.lua
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/device-status.lua -O /usr/lib/lua/prometheus-collectors/device-status.lua
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/gl-router-temp.lua -O /usr/lib/lua/prometheus-collectors/gl-router-temp.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/internet-outage.lua -O /usr/lib/lua/prometheus-collectors/internet-outage.lua
+ #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/internet-outage.lua -O /usr/lib/lua/prometheus-collectors/internet-outage.lua
  wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/dnsmasq.lua -O /usr/lib/lua/prometheus-collectors/dnsmasq.lua
  
  #echo 'Copying Extra files'
@@ -138,7 +138,7 @@ fi
    crontab -l | { cat; echo "1 0 * * * /usr/bin/12am-script.sh"; } | crontab -
    crontab -l | { cat; echo "0 * * * * /usr/bin/1-hour-script.sh"; } | crontab -
    crontab -l | { cat; echo "*/1 * * * * /usr/bin/1-minute-script.sh"; } | crontab -
-   crontab -l | { cat; echo "*/5 * * * * /usr/bin/5-minute-script.sh"; } | crontab -
+   #crontab -l | { cat; echo "*/5 * * * * /usr/bin/5-minute-script.sh"; } | crontab -
    crontab -l | { cat; echo "* * * * * /usr/bin/15-second-script.sh"; } | crontab -
    crontab -l | { cat; echo "* * * * * sleep 15; /usr/bin/15-second-script.sh"; } | crontab -
    crontab -l | { cat; echo "* * * * * sleep 30; /usr/bin/15-second-script.sh"; } | crontab -
@@ -157,7 +157,7 @@ fi
 
 # === Updating CollectD export ip ==============
  echo 'updating luci_statistics server export config to ${HOMESERVER}'
- sed -i "s/10.0.5.5/${HOMESERVER}/g"  /etc/config/luci_statistics
+ sed -i "s/10.1.1.25/${HOMESERVER}/g"  /etc/config/luci_statistics
 
 # === Setting up DNS ===========
 #L=$(uci show dhcp.lan.dhcp_option | grep "$HOMESERVER")
