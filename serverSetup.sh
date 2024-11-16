@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Determine the currently logged-in user
-CURRENT_USER=$(whoami)
+#CURRENT_USER=$(whoami)
 
 # Set the Router IP address
-ROUTER_IP="10.0.5.1"
+ROUTER_IP="10.1.1.1"
 
 # Check if the ROUTER_IP is set to the default value
-if [ "$ROUTER_IP" == "10.0.5.1" ]; then
-    read -p "Is 10.0.5.1 the correct Router IP? (Y/n): " correct_ip
+if [ "$ROUTER_IP" == "10.1.1.1" ]; then
+    read -p "Is 10.1.1.1 the correct Router IP? (Y/n): " correct_ip
 
     if [[ ! $correct_ip =~ ^[Yy]$ ]]; then
         echo "Please update the script with the correct Router_IP variable and run it again."
@@ -52,16 +52,16 @@ rm ./Openwrt-Monitoring/README.md
 
 cd ./Openwrt-Monitoring/Docker
 # Replace the Router IP in prometheus.yml
-sed -i "s/10.0.5.1/$ROUTER_IP/g" prometheus.yml
+sed -i "s/10.1.1.1/$ROUTER_IP/g" prometheus.yml
 
 # Replace the Router IP in netify-log.sh
-sed -i "s/10.0.5.1/$ROUTER_IP/g" netify-log.sh
+sed -i "s/10.1.1.1/$ROUTER_IP/g" netify-log.sh
 
 # Make netify-log.sh executable
 sudo chmod +x netify-log.sh
 
 # Create a Crontab entry as root
-sudo bash -c "echo '*/1 * * * * /home/$CURRENT_USER/Openwrt-Monitoring/Docker/netify-log.sh >> /var/log/crontab.netify.txt 2>&1' > /etc/cron.d/netify-log-cronjob"
+sudo bash -c "echo '*/1 * * * * /root/Openwrt-Monitoring/Docker/netify-log.sh >> /var/log/crontab.netify.txt 2>&1' > /etc/cron.d/netify-log-cronjob"
 
 
 # Do you want to start the Docker containers
