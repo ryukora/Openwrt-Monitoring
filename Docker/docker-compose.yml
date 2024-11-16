@@ -7,7 +7,7 @@ services:
     container_name: grafana-home
     networks:
       - internal
-    user: "$UID:$GID"
+    user: "0:0"
     ports:
       - 3000:3000
     volumes:
@@ -21,9 +21,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=45d
-      - --internal.console.libraries=/usr/share/prometheus/console_libraries
-      - --internal.console.templates=/usr/share/prometheus/consoles
-      - --internal.enable-admin-api
+      - --web.enable-lifecycle
     networks:
       - internal
     ports:
