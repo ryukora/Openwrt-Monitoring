@@ -5,7 +5,7 @@
 #Get WAN Address from Router
 . /lib/functions/network.sh; network_find_wan NET_IF; network_get_ipaddr WAN_ADDR "${NET_IF}";
 #Get Public IP address from Internet
-cip=$(curl https://api.ipify.org) > /dev/null 2>&1
+cip=$(curl https://ipv4.wtfismyip.com/text) > /dev/null 2>&1
 #Echo to File
 echo "wanip=${WAN_ADDR}" "publicip=${cip}" >/tmp/wanip.out
 sleep 1
