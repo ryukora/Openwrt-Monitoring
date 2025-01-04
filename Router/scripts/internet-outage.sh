@@ -7,34 +7,37 @@ start_time=0
 # Set the path to the log file
 log_file="/tmp/wan_monitor.log"
 
-while true; do
-    # Ping DNS server
-    ping -c 1 8.8.8.8 2>&1 > /dev/null
+# Define the target for the ping
+ping_target="8.8.8.8"
 
-    # Check if ping was successful
-    if [ $? -eq 0 ]; then
-        # Internet is working (iiw)
+# Function to log outages
+log_outage() {
+    if [ $elapsed_time -ge 10 ]; then
+        upmsg="$(date '+%Y-%m-%d-%H:%M:%S') up $elapsed_time"
+        echo "$upmsg" >> $log_file
+    fi
+}
+
+# Main loop
+while true; do
+    # Perform the ping and suppress output
+    if ping -q -c 1 -W 1 $ping_target >/dev/null 2>&1; then
+        # Internet is working
         if [ $internet_working -eq 0 ]; then
             end_time=$(date +%s)
             elapsed_time=$((end_time - start_time))
-
-            # Only write to the log file if the outage lasted longer than 5 seconds
-            if [ $elapsed_time -ge 10 ]; then
-                upmsg="$(date '+%Y-%m-%d-%H:%M:%S') up $elapsed_time"
-                sed -i "s/placeholder/$upmsg/g" $log_file
-            fi
-
+            log_outage
             internet_working=1
         fi
     else
-        # Internet is not working (iid)
+        # Internet is down
         if [ $internet_working -eq 1 ]; then
             start_time=$(date +%s)
-            echo "$(date '+%Y-%m-%d-%H:%M:%S') down placeholder " >> $log_file
+            echo "$(date '+%Y-%m-%d-%H:%M:%S') down " >> $log_file
             internet_working=0
         fi
     fi
     
-    # Wait for 1 second before pinging again
-    sleep 1
+    # Sleep for 5 seconds to reduce CPU usage
+    sleep 5
 done
