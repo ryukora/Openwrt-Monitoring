@@ -18,6 +18,15 @@ log_outage() {
     fi
 }
 
+# Check and create the log file if it doesn't exist
+if [ ! -f "$log_file" ]; then
+    touch "$log_file"
+    if [ $? -ne 0 ]; then
+        echo "Error: Unable to create log file at $log_file. Check permissions." >&2
+        exit 1
+    fi
+fi
+
 # Main loop
 while true; do
     # Perform the ping and suppress output
@@ -33,7 +42,7 @@ while true; do
         # Internet is down
         if [ $internet_working -eq 1 ]; then
             start_time=$(date +%s)
-            echo "$(date '+%Y-%m-%d-%H:%M:%S') down " >> $log_file
+            echo "$(date '+%Y-%m-%d-%H:%M:%S') down" >> $log_file
             internet_working=0
         fi
     fi
