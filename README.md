@@ -1,3 +1,5 @@
+# Credit: [@benisai (GitHub)](https://github.com/benisai/)
+  Support the original: [Openwrt-Monitoring](https://github.com/benisai/Openwrt-Monitoring)
 
 ## Intro
 * This project consists of a few applications to help monitor your Openwrt router. You will need a decent router (anything from 2-3yrs ago will work) with dual core CPU, with 256mb-512mb of RAM and 128mb nand. 
@@ -18,7 +20,7 @@
   * Packetloss monitoring via shell script, pinging google 40 times
   * Speedtest monitoring via shell script -- (kind of broken, hit/miss, I'll explain below)
   * DNS Stats via AdguardHome Container in Docker
-  * GeoIP Map for Destnation (provided by Netify logs, Check out the netify-log.sh script in the Docker folder https://github.com/benisai/Openwrt-Monitoring/blob/main/Docker/netify-log.sh)
+  * GeoIP Map for Destnation (provided by Netify logs, Check out the netify-log.sh script in the Docker folder https://github.com/ryukora/Openwrt-Monitoring/blob/main/Docker/netify-log.sh)
   * Device Traffic Panel via netify-log.sh (provided by Netify logs). Src + Dst + Port + GeoInfo 
   * Device Status (Hostname + IP + Status Online or Offline)
   * System Resources monitoring (CPU/MEM/Load/Etc) via prometheus on Router
@@ -74,15 +76,15 @@
 </br>
 
 
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard1.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard2.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard3.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard4.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard5.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard6.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard7.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard8.PNG)
-![Grafana Dashboard](https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Dashboard9.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard1.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard2.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard3.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard4.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard5.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard6.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard7.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard8.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard9.PNG)
 
 
 </br>
@@ -94,7 +96,7 @@
 ## Home Server Installation (Linux)
 
 * Clone this repo to your server. 
-  ```sudo wget https://github.com/benisai/Openwrt-Monitoring/blob/main/serverSetup.sh```
+  ```sudo wget https://github.com/ryukora/Openwrt-Monitoring/blob/main/serverSetup.sh```
    * run 'sudo nano ./serverSetup.sh' and update the router_ip variable.
    * run 'sudo chmod +x ./serverSetup.sh'
    * run 'sudo ./serverSetup.sh'
@@ -104,7 +106,9 @@
    Create Crontab config on Server (replace USER with your username for the Cronjobs)  
    run 'sudo crontab -e'  and add the line below. 
 ```   
-   */1 * * * * /home/USER/Openwrt-Monitoring/Docker/netify-log.sh >> /var/log/crontab.netify.txt 2>&1
+   */1 * * * * /root/Openwrt-Monitoring/Docker/netify-log.sh >> /var/log/netify/netify-cron.log 2>&1
+   0 * * * * find /var/log/netify/ -name "netify.log*" -size +256M -delete
+   0 0 * * * find /var/log/netify/ -type f -name "netify-cron.log*" -mtime +7 -exec rm -f {} \;
 ```
 
 </br>
@@ -113,7 +117,7 @@
 
 ## Router Installation (Openwrt 21.x)
 * Download the shell script to setup the router
-  * ```wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/routersetup.sh```
+  * ```wget https://raw.githubusercontent.com//Openwrt-Monitoring/main/routersetup.sh```
     * nano routersetup.sh
       * replace 10.0.5.5 with your Home Server IP
     * chmod +x routersetup.sh
@@ -153,9 +157,9 @@ The routersetup.sh script will do the following:
       * Set the Data collection interval to 10 seconds
   * Network plugins:
       * Configure the Ping (1.1.1.1, 8.8.8.8, 9.9.9.9)
-      * Configure the Firewall plugin (See screenshot https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/CollectD1-firewall.PNG)
+      * Configure the Firewall plugin (See screenshot https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/CollectD1-firewall.PNG)
   * Output plugins:
-      * Configure Network -> Server interfaces (add your home server ip ex.10.0.5.5) (see screenshot https://github.com/benisai/Openwrt-Monitoring/blob/main/screenshots/Collectd-output.PNG)
+      * Configure Network -> Server interfaces (add your home server ip ex.10.0.5.5) (see screenshot https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Collectd-output.PNG)
 
 <br>
    
