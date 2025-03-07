@@ -1,7 +1,14 @@
 #!/bin/sh
-logread | grep "received args: add" | awk '{print $1, $2, $3, $4, $11, $12, $13}' > /tmp/newd.tmp
+logread | grep "received args: add" > /tmp/newd.tmp
 
-IFS=$IFS
-while read day m d t mac ip name; do
-    echo date=$day-$m-$d-$t device=$name mac=$mac ip=$ip
+while read -r line; do
+    day=$(echo "$line" | awk '{print $1}')
+    m=$(echo "$line" | awk '{print $2}')
+    d=$(echo "$line" | awk '{print $3}')
+    t=$(echo "$line" | awk '{print $4}')
+    mac=$(echo "$line" | awk '{print $11}')
+    ip=$(echo "$line" | awk '{print $12}')
+    name=$(echo "$line" | awk '{print $13}')
+    
+    echo "date=$day-$m-$d-$t device=$name mac=$mac ip=$ip"
 done < /tmp/newd.tmp > /tmp/new_device.out
