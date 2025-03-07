@@ -1,11 +1,22 @@
 #!/bin/sh
 
-[ "$ACTION" == "add" ] || exit 0
+[ "$ACTION" = "add" ] || exit 0  # Fix: Use '=' instead of '==' in shell scripts
 
 known_mac_addr="/etc/known_mac_addr"
+log_file="/tmp/99-new_device.out"
+
+# Ensure the known_mac_addr file exists
+[ -f "$known_mac_addr" ] || touch "$known_mac_addr"
 
 if ! /bin/grep -iq "$MACADDR" "$known_mac_addr"; then
-        datetime=$(date '+%Y-%m-%d__%H:%M:%S')
-        echo date=$datetime, mac=$MACADDR, ip=$IPADDR, device=$HOSTNAME" > /tmp/99-new_device.out
+    datetime=$(date '+%Y-%m-%d__%H:%M:%S')
+    echo "date=$datetime, mac=$MACADDR, ip=$IPADDR, device=$HOSTNAME" >> "$log_file"
+    
+    # Log this event for debugging purposes
+    logger -t new_device "New device detected: MAC=$MACADDR, IP=$IPADDR, Hostname=$HOSTNAME"
+
+    # Add the MAC to known devices to avoid duplicate logging
+    echo "$MACADDR" >> "$known_mac_addr"
 fi
+
 exit 0
