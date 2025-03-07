@@ -119,7 +119,7 @@
 * Download the shell script to setup the router
   * ```wget https://raw.githubusercontent.com//Openwrt-Monitoring/main/routersetup.sh```
     * nano routersetup.sh
-      * replace 10.1.1.1 with your Home Server IP
+      * replace 10.1.1.25 with your Home Server IP
     * chmod +x routersetup.sh
 * ```sh ./routersetup.sh```
 
