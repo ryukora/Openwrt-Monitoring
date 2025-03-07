@@ -1,32 +1,37 @@
 local function scrape()
-  new_device =  metric("router_new_device", "gauge" )
-  for e in io.lines("/tmp/new_device.out") do
-    local fields = space_split(e)
-    local date, device, ip, mac, bytes;
-    bytes = 0;
-    for _, field in ipairs(fields) do
-      if date == nil and string.match(field, '^date') then
-        date = string.match(field,"date=([^ ]+)");
+  local new_device = metric("router_new_device", "gauge")
 
-          elseif device == nil and string.match(field, '^device') then
-        device = string.match(field,"device=([^ ]+)");
+  local file = io.open("/tmp/99-new_device.out", "r")
+  if not file then
+    return
+  end
 
-          elseif ip == nil and string.match(field, '^ip') then
-        ip = string.match(field,"ip=([^ ]+)");
+  for line in file:lines() do
+    local date, device, ip, mac, bytes
+    bytes = 0  -- Default value
 
-          elseif mac == nil and string.match(field, '^mac') then
-        mac = string.match(field,"mac=([^ ]+)");
-
-          elseif string.match(field, '^bytes') then
-        local b = string.match(field, "bytes=([^ ]+)");
-        bytes = bytes + b;
+    for _, field in ipairs(space_split(line)) do
+      if not date and field:match("^date") then
+        date = field:match("date=([^,]+)")
+      elseif not device and field:match("^device") then
+        device = field:match("device=([^,]+)")
+      elseif not ip and field:match("^ip") then
+        ip = field:match("ip=([^,]+)")
+      elseif not mac and field:match("^mac") then
+        mac = field:match("mac=([^,]+)")
+      elseif field:match("^bytes") then
+        local b = field:match("bytes=([^,]+)")
+        bytes = bytes + (tonumber(b) or 0)  -- Ensure numeric conversion
       end
-
     end
 
-    local labels = { date = date, device = device, ip = ip, mac = mac }
-    new_device(labels, bytes )
+    if date and device and ip and mac then
+      local labels = { date = date, device = device, ip = ip, mac = mac }
+      new_device(labels, bytes)
+    end
   end
+
+  file:close()
 end
 
 return { scrape = scrape }
