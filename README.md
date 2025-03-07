@@ -2,8 +2,8 @@
   Support the original: [Openwrt-Monitoring](https://github.com/benisai/Openwrt-Monitoring)
 
 ## Intro
-* This project consists of a few applications to help monitor your Openwrt router. You will need a decent router (anything from 2-3yrs ago will work) with dual core CPU, with 256mb-512mb of RAM and 128mb nand. 
-  * Note: This will only work with Openwrt 21.x (IPTables). NFTables will not be supported as IPTmon uses iptables. You can still run this project, but you wont get stats per device. 
+* This project consists of a few applications to help monitor your OpenWrt router. You will need a decent router (anything from 2- 3 years ago will work) with a core CPU, with 256mb-512mb of RAM and 128mb nand. 
+  * Note: This will only work with OpenWrt 21.x (IPTables). NFTables will not be supported as IPTmon uses iptables. You can still run this project, but you won't get stats per device. 
   * Please keep in mind. I created this repo to store my project files/config somewhere so I can look back at it later (personal use). Feel free to use it but modify the config files to your environment (IP addresses)
 
 <br>
@@ -64,7 +64,7 @@
     * device-status-ping.sh -- Ping devices on network to see if they are online
     * new_device.sh -- Check if new devices are found on network (WIP Doesn't work yet)
     * packet-loss.sh -- This will monitor packet loss by pinging Google 40 times a minute and gather the packet loss rate
-    * speedtest.sh -- This is a speedtest script created by someone else, if this doesn't run its because the 3rd party speed test blocked your IP.
+    * speedtest.sh -- This is a speedtest script created by someone else, if this doesn't run it's because the 3rd party speed test blocked your IP.
   * Prometheus - main router monitoring (CPU, MEM, etc) with custom Prometheus Lua Files
   * Collectd - to monitor ping and export iptmon data
   * vnstat2 - to monitor monthly WAN Bandwidth usage (12am-Script.sh will check if its the 1st of the month and drop the vnstatdb)
@@ -165,7 +165,7 @@ The routersetup.sh script will do the following:
    
 * Configure Netify.d on Router
   * SSH into router
-  * You must add your routers IP address to the Socket section below to enable TCP sockets in the netifyd engine.
+  * You must add your router's IP address to the Socket section below to enable TCP sockets in the netifyd engine.
   * nano /etc/netifyd.conf
     * (replace 10.1.1.1 with your router's IP address)
       <pre>
