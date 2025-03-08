@@ -76,15 +76,7 @@
 </br>
 
 
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard1.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard2.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard3.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard4.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard5.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard6.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard7.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard8.PNG)
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/Dashboard9.PNG)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/dashboard-full.png)
 
 
 </br>
