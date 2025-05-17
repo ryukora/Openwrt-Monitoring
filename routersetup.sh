@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# === Set REPO the branch =====
+BRANCH="collectd"
+
 # === Please set the IP address to point to your Home Server (Where Docker is installed) ============
 HOMESERVER="10.1.1.25"
 echo "Using IP Address: ${HOMESERVER} for HomeServer (where Docker is installed)"
@@ -16,8 +19,7 @@ EOF
  opkg update
  
 # List of software to check and install
-software="netperf openssh-sftp-server vnstat2 vnstati2 luci-app-vnstat2 netifyd collectd collectd-mod-iptables collectd-mod-ping luci-app-statistics collectd-mod-dhcpleases prometheus-node-exporter-lua prometheus-node-exporter-lua-nat_traffic prometheus-node-exporter-lua-netstat prometheus-node-exporter-lua-openwrt prometheus-node-exporter-lua-uci_dhcp_host prometheus-node-exporter-lua-wifi prometheus-node-exporter-lua-wifi_stations"
-
+software="luci-lib-jsonc netperf nlbwmon luci-app-nlbwmon openssh-sftp-server vnstat2 vnstati2 luci-app-vnstat2 netifyd collectd collectd-mod-iptables collectd-mod-ping luci-app-statistics collectd-mod-dhcpleases prometheus-node-exporter-lua prometheus-node-exporter-lua-nat_traffic prometheus-node-exporter-lua-netstat prometheus-node-exporter-lua-openwrt prometheus-node-exporter-lua-uci_dhcp_host"
 
 # Loop through the list of software
 for s in $software
@@ -28,7 +30,6 @@ do
   then
     # If not installed, install it
     echo "$s is not installed. Installing..."
-    opkg update
     opkg install $s
     echo "$s installation complete."
   else
@@ -38,43 +39,51 @@ do
 done
 
 
- echo 'Installing IPTMON 1.6.1 from GitHub'
- wget https://github.com/oofnikj/iptmon/releases/download/v0.1.6/iptmon_0.1.6-1_all.ipk -O /root/iptmon_0.1.6-1_all.ipk
- opkg install /root/iptmon_0.1.6-1_all.ipk
+# === Creating DIRs for nlbw2collectd === 
+echo 'Creating DIRs for nlbw2collectd' 
+# Create /etc/collectd/conf.d if it doesn't exist
+if [ ! -d "/etc/collectd/conf.d" ]; then
+    echo "Creating directory: /etc/collectd/conf.d"
+    mkdir -p "/etc/collectd/conf.d"
+else
+    echo "Directory already exists: /etc/collectd/conf.d"
+fi
+
+# Create /usr/share/collectd-mod-lua/ if it doesn't exist
+if [ ! -d "/usr/share/collectd-mod-lua/" ]; then
+    echo "Creating directory: /usr/share/collectd-mod-lua/"
+    mkdir -p "/usr/share/collectd-mod-lua/"
+else
+    echo "Directory already exists: /usr/share/collectd-mod-lua/"
+fi
  
-  ipt=$(uci show dhcp.@dnsmasq[0].dhcpscript | grep "iptmon")
- if [[ -z "$ipt" ]]; then
-  echo "Adding iptmon to DHCPScript option"
-        uci set dhcp.@dnsmasq[0].dhcpscript=/usr/sbin/iptmon
-        uci commit
-        ## firewall configuration for iptmon
-        echo '/usr/sbin/iptmon init' >> /etc/firewall.user
-        ## luci_statistics/collectd configuration
-	       uci set luci_statistics.collectd.Include='/etc/collectd/conf.d'
-        uci commit
-        
-        elif [[ -n "$ipt" ]]; then
-  echo "IPTMon was found, no changes made to DHCP"
- fi
- 
- 
+
+#======= Copy config / lua files for nlbw2collectd ===============
+echo 'Installing nlbw2collectd from GitHub'
+wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/collectd/Router/nlbw2collectd/lua.conf -O /etc/collectd/conf.d/lua.conf
+wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/collectd/Router/nlbw2collectd/nlbw2collectd.lua -O /usr/share/collectd-mod-lua/nlbw2collectd.lua
+
+
+# ====== Configure nlbwmon to 10s ===========
+sed -i 's/option refresh_interval 30s/option refresh_interval 10s/' /etc/config/nlbwmon
+
  
 
 #Changing vnstat backup location to SD Card.
-#dt=$(date '+%d%m%Y%H%M%S');
-#DatabaseDir "/var/lib/vnstat"
-#DIR=/tmp/mountd/disk1_part1
-#if [[ -d "$DIR" ]]; then
-#    echo "$DIR directory exists."
-#    echo "Backing up /etc/vnstat.conf.$dt"
-#    cp /etc/vnstat.conf /etc/vnstat.conf.$dt
-#    sed -i 's/;DatabaseDir /DatabaseDir /g' /etc/vnstat.conf
-#    sed -i 's,/var/lib/vnstat,/tmp/mountd/disk1_part1/vnstat,g' /etc/vnstat.conf
-#    #Change VNStatDB save time from 5 mins to 1 min
-#    sed -i 's/;SaveInterval 5 /;SaveInterval 1 /g' /etc/vnstat.conf
-#    else
-#  echo "$DIR directory does not exist."
-#fi
+dt=$(date '+%d%m%Y%H%M%S');
+DatabaseDir "/var/lib/vnstat"
+DIR=/tmp/mountd/disk1_part1
+if [[ -d "$DIR" ]]; then
+    echo "$DIR directory exists."
+    echo "Backing up /etc/vnstat.conf.$dt"
+    cp /etc/vnstat.conf /etc/vnstat.conf.$dt
+    sed -i 's/;DatabaseDir /DatabaseDir /g' /etc/vnstat.conf
+    sed -i 's,/var/lib/vnstat,/tmp/mountd/disk1_part1/vnstat,g' /etc/vnstat.conf
+    #Change VNStatDB save time from 5 mins to 1 min
+    sed -i 's/;SaveInterval 5 /;SaveInterval 1 /g' /etc/vnstat.conf
+    else
+  echo "$DIR directory does not exist."
+fi
 
  
  
@@ -87,35 +96,35 @@ done
 
  #Copying scripts and lua files to router
  echo 'Copying shell scripts and files from Github to Router'
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/speedtest.sh -O /usr/bin/speedtest.sh && chmod +x /usr/bin/speedtest.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/15-second-script.sh -O /usr/bin/15-second-script.sh && chmod +x /usr/bin/15-second-script.sh
- wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/1-minute-script.sh && chmod +x /usr/bin/1-minute-script.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/1-hour-script.sh -O /usr/bin/1-hour-script.sh && chmod +x /usr/bin/1-hour-script.sh
- #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/5-minute-script.sh -O /usr/bin/5-minute-script.sh && chmod +x /usr/bin/5-minute-script.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/12am-script.sh -O /usr/bin/12am-script.sh && chmod +x /usr/bin/12am-script.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/99-new-device -O /etc/hotplug.d/dhcp/99-new-device 
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/device-status-ping.sh -O /usr/bin/device-status-ping.sh && chmod +x /usr/bin/device-status-ping.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/packet-loss.sh -O /usr/bin/packet-loss.sh && chmod +x /usr/bin/packet-loss.sh
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/new_device.sh -O /usr/bin/new_device.sh && chmod +x /usr/bin/new_device.sh
- #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/scripts/internet-outage.sh -O /usr/bin/internet-outage.sh && chmod +x /usr/bin/internet-outage.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/speedtest.sh -O /usr/bin/speedtest.sh && chmod +x /usr/bin/speedtest.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/15-second-script.sh -O /usr/bin/15-second-script.sh && chmod +x /usr/bin/15-second-script.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/1-minute-script.sh -O /usr/bin/1-minute-script.sh && chmod +x /usr/bin/1-minute-script.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/1-hour-script.sh -O /usr/bin/1-hour-script.sh && chmod +x /usr/bin/1-hour-script.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/5-minute-script.sh -O /usr/bin/5-minute-script.sh && chmod +x /usr/bin/5-minute-script.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/12am-script.sh -O /usr/bin/12am-script.sh && chmod +x /usr/bin/12am-script.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/99-new-device -O /etc/hotplug.d/dhcp/99-new-device 
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/device-status-ping.sh -O /usr/bin/device-status-ping.sh && chmod +x /usr/bin/device-status-ping.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/packet-loss.sh -O /usr/bin/packet-loss.sh && chmod +x /usr/bin/packet-loss.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/new_device.sh -O /usr/bin/new_device.sh && chmod +x /usr/bin/new_device.sh
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/scripts/internet-outage.sh -O /usr/bin/internet-outage.sh && chmod +x /usr/bin/internet-outage.sh
 
 
  echo 'Copying custom LUA Files from GIT to router'
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/nat_traffic.lua -O /usr/lib/lua/prometheus-collectors/nat_traffic.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/speedtest.lua -O /usr/lib/lua/prometheus-collectors/speedtest.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/wanip.lua -O /usr/lib/lua/prometheus-collectors/wanip.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/packetloss.lua -O /usr/lib/lua/prometheus-collectors/packetloss.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/new_device.lua -O /usr/lib/lua/prometheus-collectors/new_device.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/vnstatmonth.lua -O /usr/lib/lua/prometheus-collectors/vnstatmonth.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/device-status.lua -O /usr/lib/lua/prometheus-collectors/device-status.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/gl-router-temp.lua -O /usr/lib/lua/prometheus-collectors/gl-router-temp.lua
- #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/internet-outage.lua -O /usr/lib/lua/prometheus-collectors/internet-outage.lua
- wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/dnsmasq.lua -O /usr/lib/lua/prometheus-collectors/dnsmasq.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/nat_traffic.lua -O /usr/lib/lua/prometheus-collectors/nat_traffic.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/speedtest.lua -O /usr/lib/lua/prometheus-collectors/speedtest.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/wanip.lua -O /usr/lib/lua/prometheus-collectors/wanip.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/packetloss.lua -O /usr/lib/lua/prometheus-collectors/packetloss.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/new_device.lua -O /usr/lib/lua/prometheus-collectors/new_device.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/vnstatmonth.lua -O /usr/lib/lua/prometheus-collectors/vnstatmonth.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/device-status.lua -O /usr/lib/lua/prometheus-collectors/device-status.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/gl-router-temp.lua -O /usr/lib/lua/prometheus-collectors/gl-router-temp.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/internet-outage.lua -O /usr/lib/lua/prometheus-collectors/internet-outage.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/dnsmasq.lua -O /usr/lib/lua/prometheus-collectors/dnsmasq.lua
  
  #echo 'Copying Extra files'
- #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/vnstat_backup -O /etc/init.d/vnstat_backup && chmod +x /etc/init.d/vnstat_backup
- #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/wrtbwmon -O /usr/sbin/wrtbwmon && chmod +x /usr/sbin/wrtbwmon
- #wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/main/Router/lua/luci_statistics -O /etc/config/luci_statistics
+ #wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/vnstat_backup -O /etc/init.d/vnstat_backup && chmod +x /etc/init.d/vnstat_backup
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/wrtbwmon -O /usr/sbin/wrtbwmon && chmod +x /usr/sbin/wrtbwmon
+ #wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/luci_statistics -O /etc/config/luci_statistics
 
  #Adding new_device.sh script to dhcp dnsmasq
  echo 'Adding new_device.sh script to dhcp dnsmasq.conf'
@@ -138,7 +147,7 @@ done
    crontab -l | { cat; echo "1 0 * * * /usr/bin/12am-script.sh"; } | crontab -
    crontab -l | { cat; echo "0 * * * * /usr/bin/1-hour-script.sh"; } | crontab -
    crontab -l | { cat; echo "*/1 * * * * /usr/bin/1-minute-script.sh"; } | crontab -
-   #crontab -l | { cat; echo "*/5 * * * * /usr/bin/5-minute-script.sh"; } | crontab -
+   crontab -l | { cat; echo "*/5 * * * * /usr/bin/5-minute-script.sh"; } | crontab -
    crontab -l | { cat; echo "* * * * * /usr/bin/15-second-script.sh"; } | crontab -
    crontab -l | { cat; echo "* * * * * sleep 15; /usr/bin/15-second-script.sh"; } | crontab -
    crontab -l | { cat; echo "* * * * * sleep 30; /usr/bin/15-second-script.sh"; } | crontab -
@@ -155,9 +164,30 @@ done
  echo 'updating prometheus config from loopback to lan'
  sed -i 's/loopback/lan/g'  /etc/config/prometheus-node-exporter-lua
 
-# === Updating CollectD export ip ==============
+# === Updating CollectD config file ==============
  echo 'updating luci_statistics server export config to ${HOMESERVER}'
  sed -i "s/10.1.1.25/${HOMESERVER}/g"  /etc/config/luci_statistics
+
+collectdFILE="/etc/config/luci_statistics"
+if [ -f "$collectdFILE" ]; then
+    # Check if '5minute' already exists in RRATimespans
+    if grep -q "option RRATimespans.*5minute" "$collectdFILE"; then
+        echo "'5minute' already exists in RRATimespans. No changes made."
+    else
+        # Add the new timespans to the front of the RRATimespans option
+        sed -i "/option RRATimespans/s/'\(.*\)'/'5minute 15minute 30minute 1hour \1'/" "$collectdFILE"
+
+        # Verify the change
+        echo "Modified RRATimespans in $collectdFILE:"
+        grep "option RRATimespans" "$collectdFILE"
+    fi
+    echo "Updating Collectd Config file complete."
+else
+    echo "File not found: $collectdFILE"
+fi
+
+
+
 
 # === Setting up DNS ===========
 #L=$(uci show dhcp.lan.dhcp_option | grep "$HOMESERVER")
