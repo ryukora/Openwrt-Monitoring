@@ -31,7 +31,7 @@ echo "wanip=${wanip}" "publicip=${publicip}" > /tmp/wanip.out
 
 sleep 1
 #---------------------------------------------------------------------------------------------------------#
-# Run nlbw export to CSV and save to file
+# Run nlbw export to CSV and save to a file
 if command -v nlbw >/dev/null; then
     nlbw -c csv -g ip,mac -o ip | tr -d '"' | tail -n +2 > /tmp/nlbwmon.out
 fi
@@ -41,7 +41,7 @@ if ! pgrep -f "internet-outage.sh" >/dev/null; then
     /usr/bin/internet-outage.sh &
 fi
 #---------------------------------------------------------------------------------------------------------#
-# Run vnstat and parse output
+# Run vnstat and parse the output
 if command -v vnstat >/dev/null; then
     vnstat --xml | grep -hnr "month id" | sed 's/<[^>]*>//g; s/2025//g; s/        //g' | cut -d " " -f2- | cut -d " " -f2- > /tmp/vnstatmonth.out
 	  #vnstat --xml |grep -hnr "month id" | sed 's/<[^>]*>/ /g; s/2025//g; s/        //g' | cut -d " " -f2- > /tmp/monthoutput.out
@@ -50,12 +50,12 @@ if command -v vnstat >/dev/null; then
 	  #vnstat --xml |grep -hnr "fiveminute id" | sed 's/<[^>]*>/ /g; s/2025//g; s/        //g' | cut -d " " -f2-   > /tmp/fiveoutput.out
 fi
 #---------------------------------------------------------------------------------------------------------#
-# Restart Netify if service is not running or using high memory
+# Restart Netify if the service is not running or using high memory
 #if ! pgrep netifyd >/dev/null; then
 #    /etc/init.d/netifyd start
 #else
 #    # Restart Netify if memory usage exceeds 25%
-##    netify_mem=$(top -b -n 1 | awk '/netify/ && !/grep/ {print $6}' | tr -d '%')
+#    netify_mem=$(top -b -n 1 | awk '/netify/ && !/grep/ {print $6}' | tr -d '%')
 #    if [ -n "$netify_mem" ] && [ "$netify_mem" -gt 25 ]; then
 #        echo "Restarting Netify due to high memory usage"
 #        /etc/init.d/netifyd restart
