@@ -116,7 +116,9 @@ fi
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/packetloss.lua -O /usr/lib/lua/prometheus-collectors/packetloss.lua
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/new_device.lua -O /usr/lib/lua/prometheus-collectors/new_device.lua
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/vnstatmonth.lua -O /usr/lib/lua/prometheus-collectors/vnstatmonth.lua
- wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/device-status.lua -O /usr/lib/lua/prometheus-collectors/device-status.lua
+ #wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/device-status.lua -O /usr/lib/lua/prometheus-collectors/device-status.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/collectd-lua/collectd.conf -O /etc/collectd/conf.d/collectd.conf
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/collectd-lua/device-status.lua -O /usr/lib/lua/prometheus-collectors/device-status.lua
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/gl-router-temp.lua -O /usr/lib/lua/prometheus-collectors/gl-router-temp.lua
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/internet-outage.lua -O /usr/lib/lua/prometheus-collectors/internet-outage.lua
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/dnsmasq.lua -O /usr/lib/lua/prometheus-collectors/dnsmasq.lua
