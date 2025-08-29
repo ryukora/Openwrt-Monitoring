@@ -60,8 +60,8 @@ fi
 
 #======= Copy config / lua files for nlbw2collectd ===============
 echo 'Installing nlbw2collectd from GitHub'
-wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/collectd/Router/nlbw2collectd/lua.conf -O /etc/collectd/conf.d/lua.conf
-wget https://raw.githubusercontent.com/benisai/Openwrt-Monitoring/collectd/Router/nlbw2collectd/nlbw2collectd.lua -O /usr/share/collectd-mod-lua/nlbw2collectd.lua
+wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/nlbw2collectd/lua.conf -O /etc/collectd/conf.d/lua.conf
+wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/nlbw2collectd/nlbw2collectd.lua -O /usr/share/collectd-mod-lua/nlbw2collectd.lua
 
 
 # ====== Configure nlbwmon to 10s ===========
@@ -88,10 +88,10 @@ fi
  
  
  echo 'Installing WrtBWmon'
- wget https://github.com/pyrovski/wrtbwmon/releases/download/0.36/wrtbwmon_0.36_all.ipk -O /root/wrtbwmon_0.36_all.ipk
- wget https://github.com/Kiougar/luci-wrtbwmon/releases/download/v0.8.3/luci-wrtbwmon_v0.8.3_all.ipk -O /root/luci-wrtbwmon_v0.8.3_all.ipk
- opkg install /root/wrtbwmon_0.36_all.ipk
- opkg install /root/luci-wrtbwmon_v0.8.3_all.ipk
+ wget https://github.com/brvphoenix/wrtbwmon/releases/download/v1.2.1-3/wrtbwmon_1.2.1-3_all.ipk -O /root/wrtbwmon_1.2.1-3_all.ipk
+ wget https://github.com/brvphoenix/luci-app-wrtbwmon/releases/download/release-2.0.13/luci-app-wrtbwmon_2.0.13_all.ipk -O /root/luci-app-wrtbwmon_2.0.13_all.ipk
+ opkg install /root/wrtbwmon_1.2.1-3_all.ipk
+ opkg install /root/luci-app-wrtbwmon_2.0.13_all.ipk
  
 
  #Copying scripts and lua files to router
@@ -120,6 +120,7 @@ fi
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/gl-router-temp.lua -O /usr/lib/lua/prometheus-collectors/gl-router-temp.lua
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/internet-outage.lua -O /usr/lib/lua/prometheus-collectors/internet-outage.lua
  wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/dnsmasq.lua -O /usr/lib/lua/prometheus-collectors/dnsmasq.lua
+ wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/lua/uci_dhcp_host.lua -O /usr/lib/lua/prometheus-collectors/uci_dhcp_host.lua
  
  #echo 'Copying Extra files'
  #wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/refs/heads/main/Router/vnstat_backup -O /etc/init.d/vnstat_backup && chmod +x /etc/init.d/vnstat_backup
