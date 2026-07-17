@@ -2,12 +2,12 @@
 #---------------------------------------------------------------------------------------------------------#
 DATE=$(date +%m-%d-%Y)
 BACKUP_DIR="/etc/backup"
-BACKUP_DIR="/tmp/mountd/disk1_part1"
+#BACKUP_DIR="/tmp/mountd/disk1_part1"
 # backup the vnstat.db and bwmon.db and add a timestamp to the file
-cp  /var/lib/vnstat/vnstat.db $BACKUP_DIR/vnstat.db-$DATE.bkp
-cp  /tmp/usage.db $BACKUP_DIR/usage.db-$DATE.bkp
+cp  /var/lib/vnstat/vnstat.db $BACKUP_DIR/vnstat.db-$DATE.bak
+cp  /tmp/usage.db $BACKUP_DIR/usage.db-$DATE.bak
 # Delete vnstat backup files older than 3 days #
-find $BACKUP_DIR/*.bkp -mtime +3 -exec rm {} \;
+find $BACKUP_DIR/*.bak -mtime +3 -exec rm {} \;
 
 #---------------------------------------------------------------------------------------------------------#
 #Remove new_device file
@@ -20,6 +20,7 @@ touch /tmp/new_device.out
 outage_file="/tmp/wan_monitor.log"
 if [ -f "$outage_file" ]; then
   rm "$outage_file"
+  touch "$outage_file"
 fi
 
 #---------------------------------------------------------------------------------------------------------#
@@ -40,5 +41,3 @@ else
 fi
 
 #---------------------------------------------------------------------------------------------------------#
-
-
