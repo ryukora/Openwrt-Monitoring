@@ -2,9 +2,9 @@
   Support the original: [Openwrt-Monitoring](https://github.com/benisai/Openwrt-Monitoring)
 
 ## Intro
-* This project consists of a few applications to help monitor your OpenWrt router. You will need a decent router (anything from 2-3 years ago will work) with a core CPU, 256mb-512mb of RAM, and 128mb nand. 
+* This project consists of a few applications to help monitor your OpenWrt router. You will need a decent router (anything from 2-3 years ago will work) with a core CPU, 256 MB-512 MB of RAM, and 128 MB NAND. 
   * Note: This will only work with OpenWrt 21.x (IPTables). NFTables will not be supported as IPTmon uses iptables. You can still run this project, but you won't get per-device stats. 
-  * Please keep in mind. I created this repo to store my project files and config so I can look back at them later (personal use). Feel free to use it, but modify the config files to your environment (IP addresses)
+  * Please keep in mind. I created this repo to store my project files and config so I can look back on them later (personal use). Feel free to use it, but modify the config files to your environment (IP addresses)
 
 <br>
 
@@ -118,8 +118,8 @@ The routersetup.sh script will do the following:
 * Install Prometheus and CollectD
 * Install iptmon, wrtbwmon, and luci-wrtbwmon
 * Copy custom scripts from this git to /usr/bin/ on the Router
-* Copy custom LUA files from this Router /usr/lib/lua/prometheus-collectors on the Router.
-* Adding new_device.sh script to Routernsmasq
+* Copy custom LUA files from this git to /usr/lib/lua/prometheus-collectors on the Router.
+* Adding new_device.sh script to dhcp dnsmasq
 * Adding scripts to Crontab
 * Update Prometheus config to 'lan'
 * Update Collectd Export IP to home server IP address
@@ -154,7 +154,7 @@ The routersetup.sh script will do the following:
    
 * Configure Netify.d on the Router
   * SSH into the Router
-  * You must add yRouter's IP address to the Socket section below to enable TCP sockets in the Netifyd engine.
+  * You must add the router's IP address to the Socket section below to enable TCP sockets in the netifyd engine.
   * nano /etc/netifyd.conf
     * (replace 10.1.1.1 with the Router's IP address)
       <pre>
@@ -194,6 +194,3 @@ The routersetup.sh script will do the following:
 --------
 
 Credit: I used Matthew Helmke's blog and Grafana dashboard, adding some updates. I can't say I'm an expert in Grafana or Prometheus (first time using Prom) https://grafana.com/blog/2021/02/09/how-i-monitor-my-openwrt-router-with-grafana-cloud-and-prometheus/
-
-
-
