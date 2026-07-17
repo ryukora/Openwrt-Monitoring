@@ -2,9 +2,9 @@
   Support the original: [Openwrt-Monitoring](https://github.com/benisai/Openwrt-Monitoring)
 
 ## Intro
-* This project consists of a few applications to help monitor your OpenWrt router. You will need a decent router (anything from 2- 3 years ago will work) with a core CPU, with 256mb-512mb of RAM and 128mb nand. 
-  * Note: This will only work with OpenWrt 21.x (IPTables). NFTables will not be supported as IPTmon uses iptables. You can still run this project, but you won't get stats per device. 
-  * Please keep in mind. I created this repo to store my project files/config somewhere so I can look back at it later (personal use). Feel free to use it, but modify the config files to your environment (IP addresses)
+* This project consists of a few applications to help monitor your OpenWrt router. You will need a decent router (anything from 2-3 years ago will work) with a core CPU, 256mb-512mb of RAM, and 128mb nand. 
+  * Note: This will only work with OpenWrt 21.x (IPTables). NFTables will not be supported as IPTmon uses iptables. You can still run this project, but you won't get per-device stats. 
+  * Please keep in mind. I created this repo to store my project files and config so I can look back at them later (personal use). Feel free to use it, but modify the config files to your environment (IP addresses)
 
 <br>
 
@@ -28,7 +28,7 @@
   * 12-hour Traffic usage (calculated by ITPMon results from Prometheus)
   * WAN Speeds via Prometheus
   * Live traffic per device (iptmon)
-  * Traffic per client usage for 2hr (calculated by ITPMon results from Prometheus)
+  * Traffic per client usage for 2 hours (calculated by ITPMon results from Prometheus)
   * Ping Stats via CollectD
   * Hourly traffic usage (calculated by ITPMon results from Prometheus)
   * 7-day traffic usage (calculated by ITPMon results from Prometheus)
@@ -36,7 +36,7 @@
   * Destination IP count (calculated by nat_traffic results from Prometheus)
   * Destination Port count (calculated by nat_traffic results from Prometheus)
   * NAT Traffic (calucated by nat_traffic results from prometheus)
-* We need to install a few pieces of software + custom shell scripts on the router to collect this data  
+* We need to install a few pieces of software + custom shell scripts on Router to collect this data  
 ```
 
 </br>
@@ -52,7 +52,7 @@
   * AdGuardHome - Container to block Ads/Porn/etc.
   * Collectd-exporter - Container to collect data from Collectd on the Router
   * Adguard-exporter - Container to collect data from AdGuardHome
-  * Netify-log.sh - This will create a netcat connection to netifyd running on the router, and it will output a local JSON log 
+  * Netify-log.sh - This will create a netcat connection to netifyd running on the Router, and it will output a local JSON log 
 
 ### Router
 * OpenWrt Router (21.x)
@@ -64,7 +64,7 @@
     * device-status-ping.sh -- Ping devices on the network to see if they are online
     * new_device.sh -- Check if new devices are found on the network (WIP, doesn't work yet)
     * packet-loss.sh -- This will monitor packet loss by pinging Google 40 times a minute and gather the packet loss rate
-    * speedtest.sh -- This is a speedtest script created by someone else, if this doesn't run it's because the 3rd party speed test blocked your IP.
+    * speedtest.sh -- This is a speedtest script created by someone else. If this doesn't run, it's likely because the third-party speed test blocked your IP.
   * Prometheus - main router monitoring (CPU, MEM, etc) with custom Prometheus Lua Files
   * Collectd - to monitor ping and export iptmon data
   * vnstat2 - to monitor monthly WAN Bandwidth usage (12am-Script.sh will check if its the 1st of the month and drop the vnstatdb)
@@ -87,16 +87,15 @@
 
 ## Home Server Installation (Linux)
 
-* Clone this repo to your server. 
+* Clone this repo to your Server. 
   ```sudo wget https://github.com/ryukora/Openwrt-Monitoring/blob/main/serverSetup.sh```
-   * run 'sudo nano ./serverSetup.sh' and update the router_ip variable.
-   * run 'sudo chmod +x ./serverSetup.sh'
-   * run 'sudo ./serverSetup.sh'
+   * run `sudo chmod +x ./serverSetup.sh'`
+   * run `sudo ./serverSetup.sh`
    * This command will ask if you want to install Docker; if it's already installed, it will be skipped
    * Update the netify-logs.sh file with your router IP.
 
-   Create Crontab config on Server (replace USER with your username for the Cronjobs)  
-   run 'sudo crontab -e'  and add the line below. 
+   Create Crontab config on Server (replace USER with your username for the Cron jobs)  
+   run `sudo crontab -e`  and add the line below. 
 ```   
    */1 * * * * /root/Openwrt-Monitoring/Docker/netify-log.sh >> /var/log/netify/netify-cron.log 2>&1
    0 * * * * find /var/log/netify/ -name "netify.log*" -size +256M -delete
@@ -107,12 +106,10 @@
 
 
 
-## Router Installation (OpenWrt 21.x)
-* Download the shell script to set up the router
-  * ```wget https://raw.githubusercontent.com//Openwrt-Monitoring/main/routersetup.sh```
-    * nano routersetup.sh
-      * replace 10.1.1.25 with your Home Server IP
-    * chmod +x routersetup.sh
+## Router Installation (OpenWrt 24.x or later)
+* Download the shell script to set up the Router
+  * ```wget https://raw.githubusercoRoutercom/ryukora/Openwrt-Monitoring/main/routersetup.sh```
+    * `chmod +x routersetup.sh`
 * ```sh ./routersetup.sh```
 
 <pre>
@@ -120,18 +117,18 @@ The routersetup.sh script will do the following:
 * Install Nano, netperf (needed for speedtest.sh), openssh-sftp-server,vnstat
 * Install Prometheus and CollectD
 * Install iptmon, wrtbwmon, and luci-wrtbwmon
-* Copy custom scripts from this git to /usr/bin/ on the router
-* Copy custom LUA files from this git to /usr/lib/lua/prometheus-collectors on the router.
-* Adding new_device.sh script to dhcp dnsmasq
+* Copy custom scripts from this git to /usr/bin/ on the Router
+* Copy custom LUA files from this Router /usr/lib/lua/prometheus-collectors on the Router.
+* Adding new_device.sh script to Routernsmasq
 * Adding scripts to Crontab
 * Update Prometheus config to 'lan'
 * Update Collectd Export IP to home server IP address
 * Add iptmon to your DHCP file under the dnsmasq section
-* Set your LAN interface to assign the DNS IP of your home server
+* Set your LAN interface to assign the DNS IP of your home server. 
 * restarts services
 </pre>
 
-* Note: I removed the interface DNS as it was causing some issues if you don't have AdGuard Home running on your Docker server. If you do, please make sure to uncomment the DNS part of the script so AdGuard Home can see the hostnames of the devices. 
+* Note: I removed the interface DNS as it was causing some issues if you don't have AdGuard Home running on your Docker server. If you do, please make sure to uncomment the DNS section of the script so that AdGuard Home can see the devices' hostnames. 
 
 
 <br>
@@ -156,10 +153,10 @@ The routersetup.sh script will do the following:
 <br>
    
 * Configure Netify.d on the Router
-  * SSH into the router
-  * You must add your router's IP address to the Socket section below to enable TCP sockets in the netifyd engine.
+  * SSH into the Router
+  * You must add yRouter's IP address to the Socket section below to enable TCP sockets in the Netifyd engine.
   * nano /etc/netifyd.conf
-    * (replace 10.1.1.1 with your router's IP address)
+    * (replace 10.1.1.1 with the Router's IP address)
       <pre>
       [socket]
       listen_path[0] = /var/run/netifyd/netifyd.sock
@@ -196,7 +193,7 @@ The routersetup.sh script will do the following:
 
 --------
 
-Credit: I have to give credit to Matthew Helmke, I used his blog and Grafana dashboard, and I added some stuff. I can't say I'm an expert in Grafana or Prometheus (first time using Prom) https://grafana.com/blog/2021/02/09/how-i-monitor-my-openwrt-router-with-grafana-cloud-and-prometheus/
+Credit: I used Matthew Helmke's blog and Grafana dashboard, adding some updates. I can't say I'm an expert in Grafana or Prometheus (first time using Prom) https://grafana.com/blog/2021/02/09/how-i-monitor-my-openwrt-router-with-grafana-cloud-and-prometheus/
 
 
 
