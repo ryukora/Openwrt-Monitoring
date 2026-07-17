@@ -89,7 +89,7 @@
 
 * Clone this repo to your Server. 
   ```sudo wget https://github.com/ryukora/Openwrt-Monitoring/blob/main/serverSetup.sh```
-   * run `sudo chmod +x ./serverSetup.sh'`
+   * run `sudo chmod +x ./serverSetup.sh`
    * run `sudo ./serverSetup.sh`
    * This command will ask if you want to install Docker; if it's already installed, it will be skipped
    * Update the netify-logs.sh file with your router IP.
