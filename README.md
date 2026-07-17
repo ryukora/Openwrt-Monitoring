@@ -108,7 +108,7 @@
 
 ## Router Installation (OpenWrt 24.x or later)
 * Download the shell script to set up the Router
-  * ```wget https://raw.githubusercoRoutercom/ryukora/Openwrt-Monitoring/main/routersetup.sh```
+  * ```wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/main/routersetup.sh```
     * `chmod +x routersetup.sh`
 * ```sh ./routersetup.sh```
 
