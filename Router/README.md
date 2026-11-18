@@ -3,7 +3,7 @@
 
 
 
-On the router, the following scripts and prometheus Lua files are used on the router. The Router-setup.sh will copy these bash script files to /usr/bin and the lua files to the prometheus location. 
+On the router, the following scripts and prometheus Lua files are used on the router. The routersetup.sh will copy these bash script files to /usr/bin and the lua files to the prometheus location. 
 
 The Scripts will output "Reports" to /tmp/ location as *.out. 
 
@@ -43,5 +43,14 @@ In the Scripts folder:
 
 >wanip.lua -- Will read /tmp/wanip.out and collect data
 
+In the nlbw2collectd folder (per-device traffic, works with nftables / fw4):
+>nlbw2collectd.lua -- copied to /usr/share/collectd-mod-lua. Reads `nlbw -c json -g ip` and sends rx (download) / tx (upload) bytes and packets per device to collectd (needs collectd-mod-lua)
 
- 
+>lua.conf -- copied to /etc/collectd/conf.d. Loaded because routersetup.sh sets `luci_statistics.collectd.Include='/etc/collectd/conf.d'`
+
+In Prometheus the values show up as `collectd_nlbwmon_ipt_bytes_total{nlbwmon="nlbwmon_rx"|"nlbwmon_tx", type="<device>"}`.
+
+In the collectd-lua folder:
+>device-status.lua -- Prometheus collector for /tmp/device-status.out (copied to /usr/lib/lua/prometheus-collectors)
+
+luci_statistics -- reference template of /etc/config/luci_statistics after routersetup.sh (see the main README, "About the template")

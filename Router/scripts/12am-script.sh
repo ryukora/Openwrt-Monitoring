@@ -1,17 +1,19 @@
-#!/bin/bash
+#!/bin/sh
+# NOTE: OpenWrt has no bash by default, so this script must stay POSIX sh.
 #---------------------------------------------------------------------------------------------------------#
 DATE=$(date +%m-%d-%Y)
 BACKUP_DIR="/etc/backup"
 #BACKUP_DIR="/tmp/mountd/disk1_part1"
-# backup the vnstat.db and bwmon.db and add a timestamp to the file
-cp  /var/lib/vnstat/vnstat.db $BACKUP_DIR/vnstat.db-$DATE.bak
-cp  /tmp/usage.db $BACKUP_DIR/usage.db-$DATE.bak
-# Delete vnstat backup files older than 3 days #
-find $BACKUP_DIR/*.bak -mtime +3 -exec rm {} \;
+mkdir -p "$BACKUP_DIR"
+# backup the vnstat.db (and wrtbwmon usage.db if it exists) and add a timestamp to the file
+[ -f /var/lib/vnstat/vnstat.db ] && cp /var/lib/vnstat/vnstat.db "$BACKUP_DIR/vnstat.db-$DATE.bak"
+[ -f /tmp/usage.db ] && cp /tmp/usage.db "$BACKUP_DIR/usage.db-$DATE.bak"
+# Delete backup files older than 3 days #
+find "$BACKUP_DIR" -name "*.bak" -mtime +3 -exec rm -f {} \;
 
 #---------------------------------------------------------------------------------------------------------#
 #Remove new_device file
-rm /tmp/new_device.out
+rm -f /tmp/new_device.out
 touch /tmp/new_device.out
 
 #---------------------------------------------------------------------------------------------------------#
@@ -30,10 +32,10 @@ gateway_ip=$(ip route | awk '/default/ {print $3}')
 wan_iface=$(ip route | awk -v ip="$gateway_ip" '$0~ip {print $5}')
 #Get Date
 bi=$(date +%d)
-if [ $bi = "01" ]
+if [ "$bi" = "01" ] && [ -n "$wan_iface" ]
 then
-    vnstat --remove -i $wan_iface --force
-    vnstat --add -i $wan_iface
+    vnstat --remove -i "$wan_iface" --force
+    vnstat --add -i "$wan_iface"
     /etc/init.d/vnstat restart
 
 else

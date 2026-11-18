@@ -15,8 +15,8 @@ WAN_ADDR6=$(echo "$WAN_ADDR6")
 # Get Public IP address from Internet (suppress errors)
 #cip4=$(curl -s https://api.ipify.org/?format=text 2>/dev/null)
 #cip6=$(curl -s https://api64.ipify.org?format=text 2>/dev/null)
-cip4=$(curl -s -4 https://myip.wtf/text 2>/dev/null)
-cip6=$(curl -s -6 https://myip.wtf/text 2>/dev/null)
+cip4=$(curl -s -m 5 -4 https://myip.wtf/text 2>/dev/null)
+cip6=$(curl -s -m 5 -6 https://myip.wtf/text 2>/dev/null)
 
 # Ensure values are set; if empty, assign "N/A"
 wan_ipv4=${WAN_ADDR:-"N/A"}
@@ -48,7 +48,15 @@ fi
 #---------------------------------------------------------------------------------------------------------#
 # Run vnstat and parse output
 if command -v vnstat >/dev/null; then
-    vnstat --xml | grep -hnr "month id" | sed 's/<[^>]*>//g; s/2025//g; s/        //g' | cut -d " " -f2- | cut -d " " -f2- > /tmp/vnstatmonth.out
+    # --oneline b: field 9 = this month rx (download), field 10 = this month tx (upload), in bytes
+    # (independent of the year, unlike the old "s/2025//g" xml parsing)
+    network_get_device WAN_DEV "${NET_IF}"
+    if [ -n "$WAN_DEV" ]; then
+        VNSTAT_IFACE="-i $WAN_DEV"
+    else
+        VNSTAT_IFACE=""
+    fi
+    vnstat $VNSTAT_IFACE --oneline b 2>/dev/null | awk -F';' 'NF >= 10 { print $9, $10 }' > /tmp/vnstatmonth.out
 	  #vnstat --xml |grep -hnr "month id" | sed 's/<[^>]*>/ /g; s/2025//g; s/        //g' | cut -d " " -f2- > /tmp/monthoutput.out
 	  #vnstat --xml |grep -hnr "day id" | sed 's/<[^>]*>/ /g; s/2025//g; s/        //g' | cut -d " " -f2- > /tmp/dayoutput.out
 	  #vnstat --xml |grep -hnr "hour id" | sed 's/<[^>]*>/ /g; s/2025//g; s/        //g; s/  00/:00/g' | cut -d " " -f2-  > /tmp/houroutput.out

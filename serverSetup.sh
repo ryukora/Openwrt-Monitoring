@@ -5,6 +5,21 @@ set -Eeuo pipefail
 REPO_URL="https://github.com/ryukora/Openwrt-Monitoring.git"
 REPO_NAME="Openwrt-Monitoring"
 
+# Enter (empty answer) = default "yes" for (Y/n) prompts
+is_yes() {
+    [[ -z "$1" || "$1" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]
+}
+
+is_ipv4() {
+    local IFS=.
+    local -a octets
+    [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
+    read -r -a octets <<< "$1"
+    for o in "${octets[@]}"; do
+        (( 10#$o <= 255 )) || return 1
+    done
+}
+
 echo "========================================="
 echo " OpenWrt Monitoring Server Setup"
 echo "========================================="
@@ -15,29 +30,16 @@ echo ""
 # ------------------------------------------------------------------------------
 
 while true; do
-    read -rp "Enter Template Router IP currently in repository files: " TEMPLATE_IP
+    read -rp "Enter your OpenWrt Router IP Address (LAN IP, e.g. 192.168.1.1): " ROUTER_IP
 
-    if [[ "$TEMPLATE_IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    if is_ipv4 "$ROUTER_IP"; then
         break
     fi
 
-    echo "Invalid IPv4 address format."
+    echo "Invalid IPv4 address."
 done
 
 echo ""
-
-while true; do
-    read -rp "Enter your OpenWrt Router IP Address: " ROUTER_IP
-
-    if [[ "$ROUTER_IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-        break
-    fi
-
-    echo "Invalid IPv4 address format."
-done
-
-echo ""
-echo "Template IP : $TEMPLATE_IP"
 echo "Router IP   : $ROUTER_IP"
 echo ""
 
@@ -82,7 +84,7 @@ echo ""
 
 read -rp "Continue? (Y/n): " CONTINUE_SETUP
 
-if [[ ! "$CONTINUE_SETUP" =~ ^[Yy]$ ]]; then
+if ! is_yes "$CONTINUE_SETUP"; then
     echo "Setup cancelled."
     exit 0
 fi
@@ -110,7 +112,7 @@ if ! command -v docker >/dev/null 2>&1; then
 
     read -rp "Install Docker now? (Y/n): " INSTALL_DOCKER
 
-    if [[ "$INSTALL_DOCKER" =~ ^[Yy]$ ]]; then
+    if is_yes "$INSTALL_DOCKER"; then
         curl -fsSL https://get.docker.com -o get-docker.sh
         sudo sh get-docker.sh
         rm -f get-docker.sh
@@ -162,9 +164,10 @@ if [[ -d "$TARGET_DIR" ]]; then
     echo "Existing repository found:"
     echo "$TARGET_DIR"
 
-    read -rp "Remove and re-clone repository? (Y/n): " RECLONE
+    # Default is NO here: re-cloning deletes local changes in that folder
+    read -rp "Remove and re-clone repository? (y/N): " RECLONE
 
-    if [[ "$RECLONE" =~ ^[Yy]$ ]]; then
+    if [[ "$RECLONE" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]; then
         rm -rf "$TARGET_DIR"
     else
         echo "Setup aborted."
@@ -184,7 +187,7 @@ git clone "$REPO_URL" "$TARGET_DIR"
 echo ""
 read -rp "Remove unused folders/files (Python, Router, screenshots, docs)? (Y/n): " CLEAN_REPO
 
-if [[ "$CLEAN_REPO" =~ ^[Yy]$ ]]; then
+if is_yes "$CLEAN_REPO"; then
     rm -rf "$TARGET_DIR/Python" 2>/dev/null || true
     rm -rf "$TARGET_DIR/Router" 2>/dev/null || true
     rm -rf "$TARGET_DIR/screenshots" 2>/dev/null || true
@@ -212,14 +215,16 @@ cd "$DOCKER_DIR" || {
 echo ""
 echo "Updating configuration files..."
 
-ESCAPED_TEMPLATE_IP="${TEMPLATE_IP//./\\.}"
+# The repository files contain example router IPs (prometheus.yml: 10.0.5.1,
+# netify-log.sh: 10.1.1.1). Replace them by position, not by a "template IP".
 
 if [[ -f prometheus.yml ]]; then
-    sed -i "s/${ESCAPED_TEMPLATE_IP}/${ROUTER_IP}/g" prometheus.yml
+    # job 'openwrt-prom': targets: ['<router-ip>:9100']
+    sed -i -E "s/(targets: \[')[0-9.]+(:9100'\])/\1${ROUTER_IP}\2/" prometheus.yml
 fi
 
 if [[ -f netify-log.sh ]]; then
-    sed -i "s/${ESCAPED_TEMPLATE_IP}/${ROUTER_IP}/g" netify-log.sh
+    sed -i -E "s/^router=[0-9.]+/router=${ROUTER_IP}/" netify-log.sh
 fi
 
 chmod +x netify-log.sh
@@ -254,9 +259,9 @@ read -rp "Install AdGuard Home stack? (Y/n): " INSTALL_ADGUARD
 echo ""
 read -rp "Start Docker containers now? (Y/n): " START_DOCKER
 
-if [[ "$START_DOCKER" =~ ^[Yy]$ ]]; then
+if is_yes "$START_DOCKER"; then
 
-    if [[ "$INSTALL_ADGUARD" =~ ^[Yy]$ ]]; then
+    if is_yes "$INSTALL_ADGUARD"; then
 
         if [[ -f docker-compose-extras.yml ]]; then
             sudo docker compose -f docker-compose-extras.yml up -d

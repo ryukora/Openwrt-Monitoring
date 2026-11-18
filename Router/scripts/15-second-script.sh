@@ -135,17 +135,13 @@ fi
       }
     ' "$IP6_NEIGH_FILE"
   fi
-} | awk -F'|' '
-  NR==1 { next }  # skip header from the first block (we’ll re-add later)
-  { rows[++n]=$0 }
-  END {
-    # Sort by IP-like string (simple lexical works OK for LANs);
-    # for a stricter sort, split IP and compare numerically.
-    asort(rows)
-    print "HOSTNAME|MAC|IP|SOURCE"
-    for (i=1;i<=n;i++) print rows[i]
-  }
-' > "$TMP_TXT"
+} | {
+  # skip the header from the first block, sort the rows, re-add the header
+  # (BusyBox awk has no asort(), so use sort instead)
+  read -r _header
+  echo "HOSTNAME|MAC|IP|SOURCE"
+  sort
+} > "$TMP_TXT"
 
 # If nothing found, add a friendly note
 if [ ! -s "$TMP_TXT" ]; then

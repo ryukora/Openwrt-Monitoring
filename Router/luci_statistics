@@ -1,24 +1,47 @@
+# =============================================================================
+# OpenWrt Monitoring - luci_statistics TEMPLATE (reference only)
+# =============================================================================
+# This is what /etc/config/luci_statistics looks like after routersetup.sh
+# on OpenWrt 24.10 / 25.12. routersetup.sh does NOT copy this file; it sets
+# the same values with `uci`, so you never have to edit it by hand.
+#
+# 10.0.5.5 below is only an EXAMPLE Home Server IP (the Docker machine that
+# runs collectd-exporter on udp/25826). Replace it with your own if you use
+# this file manually:
+#   cp /etc/config/luci_statistics /etc/config/luci_statistics.bak
+#   wget -O /etc/config/luci_statistics \
+#     https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/main/Router/luci_statistics
+#   sed -i 's/10\.0\.5\.5/<YOUR-HOME-SERVER-IP>/' /etc/config/luci_statistics
+#   /etc/init.d/luci_statistics restart
+#
+# Every enabled plugin needs its package (collectd-mod-<name>), otherwise
+# collectd will not start. The Firewall (iptables) plugin stays disabled:
+# OpenWrt 22.03+ uses nftables (fw4); per-device traffic comes from nlbwmon.
+# =============================================================================
+
 
 config statistics 'collectd'
 	option BaseDir '/var/run/collectd'
 	option PIDFile '/var/run/collectd.pid'
 	option PluginDir '/usr/lib/collectd'
 	option TypesDB '/usr/share/collectd/types.db'
-	option ReadThreads '2'
-	option Include '/etc/collectd/conf.d/*.conf'
 	option Interval '10'
-	option FQDNLookup '1'
+	option ReadThreads '2'
+	option Include '/etc/collectd/conf.d'
 
 config statistics 'rrdtool'
-	option default_timespan '1hour'
+	option default_timespan '2hour'
 	option image_width '600'
+	option image_height '150'
 	option image_path '/tmp/rrdimg'
 
 config statistics 'collectd_rrdtool'
+	option enable '1'
 	option DataDir '/tmp/rrd'
-	option RRARows '144'
+	option RRARows '288'
 	option RRASingle '1'
-	option RRATimespans '1hour 1day 1week 1month 1year'
+	option RRATimespans '2hour 1day 1week 1month 1year'
+	option backup '0'
 
 config statistics 'collectd_csv'
 	option enable '0'
@@ -88,16 +111,18 @@ config statistics 'collectd_df'
 	option ValuesPercentage '0'
 
 config statistics 'collectd_dhcpleases'
-	option Path '/tmp/dhcp.leases'
 	option enable '1'
+	option Path '/tmp/dhcp.leases'
 
 config statistics 'collectd_disk'
 	option enable '0'
+	option Disks 'hda1 hdb'
+	option IgnoreSelected '0'
 
 config statistics 'collectd_dns'
-	list Interfaces 'br-lan'
-	list IgnoreSources '127.0.0.1'
 	option enable '0'
+	option Interfaces 'br-lan'
+	option IgnoreSources '127.0.0.1'
 
 config statistics 'collectd_entropy'
 	option enable '0'
@@ -107,43 +132,44 @@ config statistics 'collectd_exec'
 
 config statistics 'collectd_interface'
 	option enable '1'
-	list Interfaces 'br-lan'
-	list Interfaces 'wlan-sta0'
+	option Interfaces 'br-lan'
+	option IgnoreSelected '0'
 
 config statistics 'collectd_ipstatistics'
 	option enable '0'
 
 config statistics 'collectd_iptables'
-	option enable '1'
+	option enable '0'
 
 config collectd_iptables_match
+	option table 'nat'
+	option chain 'luci_fw_postrouting'
 	option target 'MASQUERADE'
 	option source '192.168.1.0/24'
 	option outputif 'br-ff'
-	option chain 'iptmon_rx'
-	option name 'rx_traffic'
-	option table 'mangle'
+	option name 'LAN-Clients traffic'
 
 config collectd_iptables_match
+	option chain 'luci_fw_postrouting'
+	option table 'nat'
 	option target 'MASQUERADE'
 	option source '10.61.230.0/24'
 	option outputif 'br-ff'
-	option chain 'iptmon_tx'
-	option name 'tx_traffic'
-	option table 'mangle'
+	option name 'WLAN-Clients traffic'
 
 config statistics 'collectd_irq'
 	option enable '0'
 	option Irqs '2 3 4 7'
 
 config statistics 'collectd_iwinfo'
-	option enable '0'
+	option enable '1'
 
 config statistics 'collectd_load'
 	option enable '1'
 
 config statistics 'collectd_memory'
 	option enable '1'
+	option HideFree '0'
 	option ValuesAbsolute '1'
 	option ValuesPercentage '0'
 
@@ -166,19 +192,17 @@ config statistics 'collectd_openvpn'
 	option enable '0'
 
 config statistics 'collectd_ping'
-	option TTL '127'
 	option enable '1'
-	option AddressFamily 'any'
+	option TTL '127'
 	option Interval '15'
+	option AddressFamily 'any'
 	list Hosts '1.1.1.1'
 	list Hosts '8.8.8.8'
 	list Hosts '9.9.9.9'
 
 config statistics 'collectd_processes'
 	option enable '0'
-	list Processes 'uhttpd'
-	list Processes 'dnsmasq'
-	list Processes 'dropbear'
+	option Processes 'uhttpd dnsmasq dropbear'
 
 config statistics 'collectd_sensors'
 	option enable '0'
@@ -193,7 +217,9 @@ config statistics 'collectd_splash_leases'
 
 config statistics 'collectd_tcpconns'
 	option enable '0'
-	option ListeningPorts '1'
+	option ListeningPorts '0'
+	list LocalPorts '22'
+	option AllPortsSummary '0'
 
 config statistics 'collectd_thermal'
 	option enable '0'
@@ -205,3 +231,4 @@ config statistics 'collectd_uptime'
 config collectd_network_server
 	option host '10.0.5.5'
 	option port '25826'
+
