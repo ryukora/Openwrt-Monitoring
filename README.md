@@ -132,6 +132,11 @@ sh ./routersetup.sh 192.168.1.10        # Home Server IP as argument
 sh ./routersetup.sh 192.168.1.10 -y     # also skip the confirmation
 ```
 
+The LAN interface does not have to be called `lan`. The script asks the router which of its own addresses it uses to reach the Home Server (`ip route get <home-server-ip>`) and uses the interface that has that address (for example `vlan10_lan` on `br-lan.10`). It never picks an interface in the `wan` firewall zone. If detection fails, set the name yourself (list the names with `ubus list network.interface.*`):
+```
+LAN_INTERFACE=vlan10_lan sh ./routersetup.sh 192.168.1.10
+```
+
 You can run the script again at any time, for example to change the Home Server IP or to repair the configuration. It does not create duplicate cron jobs or duplicate collectd servers.
 
 <pre>
@@ -143,7 +148,8 @@ routersetup.sh does the following:
 * Copies the custom scripts to /usr/bin and the Lua collectors to /usr/lib/lua/prometheus-collectors
 * Installs nlbw2collectd (per-device traffic from nlbwmon into collectd)
 * Adds the scripts to crontab
-* Sets the Prometheus exporter to listen on 'lan' (port 9100)
+* Detects the LAN interface (any name, e.g. lan, vlan10_lan) and sets the Prometheus exporter
+  to listen on it (port 9100)
 * Configures collectd with uci (no manual LuCI setup needed):
     - data interval 10 seconds
     - Network output -> Home Server IP, udp/25826
@@ -154,7 +160,7 @@ routersetup.sh does the following:
   (otherwise collectd refuses to start)
 * Tests the collectd configuration before restarting it
 * Adds the WAN device to vnStat, sets nlbwmon refresh to 10s
-* Sets netifyd to listen on the router LAN IP (for netify-log.sh)
+* Sets netifyd to listen on the router LAN IP (for netify-log.sh), adds a [socket] section if missing
 * Restarts the services and prints a validation summary
 * Backs up changed configs as *.bak.&lt;date&gt;
 </pre>
@@ -215,7 +221,7 @@ Make sure every plugin enabled in it has its package installed (`collectd-mod-pi
   * Output plugins: **RRDTool** enabled (otherwise LuCI shows "No RRD data found")
   * **Do NOT configure the Firewall plugin** on OpenWrt 22.03+ (24.10, 25.12). It reads iptables rules, and fw4 uses nftables, so LuCI shows `TypeError: Cannot convert undefined or null to object` and there is nothing to monitor. The old screenshot `CollectD1-firewall.PNG` is for OpenWrt 21.02 only. Per-device traffic comes from nlbwmon now.
 
-* **netifyd** (done by the script when `/etc/netifyd.conf` has a `[socket]` section)
+* **netifyd** (done by the script when the LAN interface is detected)
   * `netify-log.sh` on the Home Server connects to netifyd on the router, so netifyd must listen on the router's LAN IP:
     <pre>
     [socket]
@@ -275,8 +281,15 @@ Harmless. dnsmasq checks at restart whether another DHCP server exists on the LA
 * Only devices in the DHCP leases / static DHCP hosts are reported
 * The panels use `collectd_nlbwmon_ipt_bytes_total`. Re-import the dashboard JSON from this repo if you still have the old iptmon queries (`collectd_iptables_ipt_bytes_total`)
 
+**`[WARN] Prometheus exporter is NOT running` / `Router LAN IP : unknown`**
+The LAN interface was not found (older script versions assumed it is called `lan`). The exporter's `listen_interface` must be an existing **logical** interface name from `/etc/config/network`, otherwise it never starts (`logread -e prometheus` shows "defering start until listen interface ... becomes ready"). Run the new `routersetup.sh` again, or set it yourself:
+```
+ubus list network.interface.*          # e.g. network.interface.vlan10_lan
+LAN_INTERFACE=vlan10_lan sh ./routersetup.sh <home-server-ip>
+```
+
 **Prometheus has no router data**
-`uci get prometheus-node-exporter-lua.main.listen_interface` must be `lan`, and the Router IP in `Docker/prometheus.yml` must be correct.
+`uci get prometheus-node-exporter-lua.main.listen_interface` must be your LAN interface, `wget -qO- http://<router-ip>:9100/metrics` must work, and the Router IP in `Docker/prometheus.yml` must be correct.
 
 <br>
 

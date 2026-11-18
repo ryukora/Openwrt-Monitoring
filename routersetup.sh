@@ -11,6 +11,9 @@
 #   sh ./routersetup.sh                    # interactive, asks for the Home Server IP
 #   sh ./routersetup.sh 192.168.1.10       # Home Server IP as argument
 #   sh ./routersetup.sh 192.168.1.10 -y    # no confirmation prompt
+#   LAN_INTERFACE=vlan10_lan sh ./routersetup.sh 192.168.1.10
+#                                          # force the LAN interface name
+#                                          # (normally detected automatically)
 #
 # "Home Server" = the Linux machine that runs Docker (Prometheus, Grafana,
 # collectd-exporter). It is NOT the router's own IP.
@@ -48,7 +51,7 @@ for ARG in "$@"; do
     case "$ARG" in
         -y|--yes) ASSUME_YES=1 ;;
         -h|--help)
-            sed -n '2,19p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
+            sed -n '2,22p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *) HOMESERVER="$ARG" ;;
@@ -433,6 +436,81 @@ WAN_DEV=""
 network_find_wan WAN_IF
 [ -n "$WAN_IF" ] && network_get_device WAN_DEV "$WAN_IF"
 
+# ------------------------------------------------------------------------------
+# LAN detection
+# The LAN interface is not always called "lan" (e.g. vlan10_lan on br-lan.10),
+# so ask the kernel which router address is used to reach the Home Server and
+# find the logical interface (/etc/config/network) that owns it.
+# ------------------------------------------------------------------------------
+
+# Logical interface that has the given IPv4 address
+iface_with_ip() {
+    for IFACE in $(ubus list 'network.interface.*' 2>/dev/null | sed 's/^network\.interface\.//'); do
+        [ "$IFACE" = "loopback" ] && continue
+        ADDRS=""
+        network_get_ipaddrs ADDRS "$IFACE"
+        for A in $ADDRS; do
+            if [ "$A" = "$1" ]; then
+                echo "$IFACE"
+                return 0
+            fi
+        done
+    done
+    return 1
+}
+
+# Interfaces in the firewall zone "wan" (never listen there)
+wan_zone_ifaces() {
+    for ZONE in $(uci -q show firewall | sed -n "s/^firewall\.\([^.]*\)\.name='wan'$/\1/p"); do
+        uci -q get "firewall.$ZONE.network"
+    done
+}
+
+is_wan_iface() {
+    [ -n "$1" ] || return 1
+    [ "$1" = "$WAN_IF" ] && return 0
+    wan_zone_ifaces | tr ' ' '\n' | grep -Fxq "$1"
+}
+
+LAN_IP=""
+LAN_IFACE=""
+
+if [ -n "${LAN_INTERFACE:-}" ]; then
+    LAN_IFACE="$LAN_INTERFACE"
+    network_get_ipaddr LAN_IP "$LAN_IFACE"
+    [ -n "$LAN_IP" ] || warn "LAN_INTERFACE=$LAN_IFACE has no IPv4 address (is the name right? see: ubus list network.interface.*)"
+else
+    # 1) the router address used to reach the Home Server
+    ROUTE_SRC="$(ip -4 route get "$HOMESERVER" 2>/dev/null | awk '{ for (i = 1; i < NF; i++) if ($i == "src") { print $(i + 1); exit } }')"
+    if [ -n "$ROUTE_SRC" ]; then
+        FOUND_IFACE="$(iface_with_ip "$ROUTE_SRC")"
+        if [ -n "$FOUND_IFACE" ] && ! is_wan_iface "$FOUND_IFACE"; then
+            LAN_IFACE="$FOUND_IFACE"
+            LAN_IP="$ROUTE_SRC"
+        elif [ -n "$FOUND_IFACE" ]; then
+            warn "The Home Server $HOMESERVER is reached through WAN interface '$FOUND_IFACE'. Is the IP right?"
+        fi
+    fi
+
+    # 2) fall back to an interface named "lan"
+    if [ -z "$LAN_IFACE" ]; then
+        ADDR=""
+        network_get_ipaddr ADDR lan
+        if [ -n "$ADDR" ]; then
+            LAN_IFACE="lan"
+            LAN_IP="$ADDR"
+        fi
+    fi
+fi
+
+if [ -n "$LAN_IFACE" ] && [ -n "$LAN_IP" ]; then
+    ok "LAN interface: $LAN_IFACE ($LAN_IP)"
+else
+    LAN_IFACE=""
+    LAN_IP=""
+    warn "LAN interface not detected. Run again with: LAN_INTERFACE=<name> sh ./routersetup.sh $HOMESERVER   (names: ubus list network.interface.*)"
+fi
+
 if [ -f /etc/config/vnstat ]; then
     # OpenWrt's vnstatd runs with --noadd, so the WAN device must be listed in uci.
     if [ -n "$WAN_DEV" ]; then
@@ -459,10 +537,12 @@ fi
 # Prometheus node exporter: listen on LAN
 # ------------------------------------------------------------------------------
 
-if [ -f /etc/config/prometheus-node-exporter-lua ]; then
+if [ -f /etc/config/prometheus-node-exporter-lua ] && [ -n "$LAN_IFACE" ]; then
     backup_file /etc/config/prometheus-node-exporter-lua
     uci set prometheus-node-exporter-lua.main=prometheus-node-exporter-lua
-    uci set prometheus-node-exporter-lua.main.listen_interface='lan'
+    # Must be a logical interface name. If it does not exist, the exporter
+    # never starts ("defering start until listen interface ... becomes ready").
+    uci set prometheus-node-exporter-lua.main.listen_interface="$LAN_IFACE"
     uci -q get prometheus-node-exporter-lua.main.listen_port >/dev/null || \
         uci set prometheus-node-exporter-lua.main.listen_port='9100'
     uci commit prometheus-node-exporter-lua
@@ -472,12 +552,18 @@ fi
 # netifyd: open the TCP socket on the router's LAN IP (used by netify-log.sh)
 # ------------------------------------------------------------------------------
 
-LAN_IP=""
-network_get_ipaddr LAN_IP lan
 NETIFYD_CONF="/etc/netifyd.conf"
 
-if [ -n "$LAN_IP" ] && [ -f "$NETIFYD_CONF" ] && grep -q '^\[socket\]' "$NETIFYD_CONF"; then
+if [ -n "$LAN_IP" ] && [ -f "$NETIFYD_CONF" ]; then
     backup_file "$NETIFYD_CONF"
+    if ! grep -q '^\[socket\]' "$NETIFYD_CONF"; then
+        # no [socket] section yet: add one (keep the local unix socket too)
+        {
+            echo ""
+            echo "[socket]"
+            echo "listen_path[0] = /var/run/netifyd/netifyd.sock"
+        } >> "$NETIFYD_CONF"
+    fi
     if grep -q '^[[:space:]]*listen_address\[0\][[:space:]]*=' "$NETIFYD_CONF"; then
         # replace the existing entry
         awk -v ip="$LAN_IP" '
@@ -494,7 +580,7 @@ if [ -n "$LAN_IP" ] && [ -f "$NETIFYD_CONF" ] && grep -q '^\[socket\]' "$NETIFYD
     mv -f "$NETIFYD_CONF.tmp.$$" "$NETIFYD_CONF"
     ok "netifyd listens on $LAN_IP"
 else
-    warn "netifyd socket not configured automatically. See README (Configure netifyd)."
+    warn "netifyd socket not configured automatically (LAN IP or /etc/netifyd.conf missing). See README (Extra Configuration)."
 fi
 
 # ------------------------------------------------------------------------------
@@ -641,10 +727,11 @@ else
     warn "collectd-mod-lua or nlbw2collectd.lua missing (no per-device traffic)"
 fi
 
-if [ "$(uci -q get prometheus-node-exporter-lua.main.listen_interface)" = "lan" ]; then
-    ok "Prometheus exporter listens on LAN port $(uci -q get prometheus-node-exporter-lua.main.listen_port)"
+EXPORTER_IFACE="$(uci -q get prometheus-node-exporter-lua.main.listen_interface)"
+if [ -n "$LAN_IFACE" ] && [ "$EXPORTER_IFACE" = "$LAN_IFACE" ]; then
+    ok "Prometheus exporter listens on $LAN_IFACE ($LAN_IP:$(uci -q get prometheus-node-exporter-lua.main.listen_port))"
 else
-    warn "Prometheus exporter is not set to LAN"
+    warn "Prometheus exporter listen_interface is '${EXPORTER_IFACE:-unset}' (LAN not detected)"
 fi
 
 if pidof prometheus-node-exporter-lua >/dev/null 2>&1 || pgrep -f prometheus-node-exporter-lua >/dev/null 2>&1; then
@@ -674,7 +761,7 @@ echo "========================================="
 echo ""
 echo "OpenWrt          : $OWRT_RELEASE ($PKG_MANAGER)"
 echo "Home Server      : $HOMESERVER"
-echo "Router LAN IP    : ${LAN_IP:-unknown}"
+echo "Router LAN IP    : ${LAN_IP:-unknown} (${LAN_IFACE:-interface unknown})"
 echo ""
 echo "Backups (*.bak.$BACKUP_DATE):"
 echo "  /etc/config/luci_statistics.bak.$BACKUP_DATE"
