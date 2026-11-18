@@ -7,10 +7,16 @@
 #cat /tmp/usage.htm | grep "2025" | sed 's/,/  /g; s/"//g; s/new Array//g' | tr -d '()' | sed '$d' > /tmp/bwmon_usage.out
 
 #---------------------------------------------------------------------------------------------------------#
-#Get Temp and Fan speed for GL-Routers
-#temp=`cat /sys/class/thermal/thermal_zone0/temp`
-#speed=`gl_fan -s`
-#echo "$temp $speed" > /tmp/tempstats.out
+#Get Temp and Fan speed for GL-Routers (read by gl-router-temp.lua)
+# routersetup.sh installs that collector on GL.iNet devices only
+if [ -f /usr/lib/lua/prometheus-collectors/gl-router-temp.lua ] && [ -r /sys/class/thermal/thermal_zone0/temp ]; then
+  temp=$(cat /sys/class/thermal/thermal_zone0/temp)
+  speed=0
+  if command -v gl_fan >/dev/null 2>&1; then
+    speed=$(gl_fan -s 2>/dev/null)
+  fi
+  echo "$temp ${speed:-0}" > /tmp/tempstats.out
+fi
 
 #---------------------------------------------------------------------------------------------------------#
 # Network Clients Discovery Script for OpenWRT

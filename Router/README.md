@@ -29,7 +29,7 @@ In the Scripts folder:
   In the lua folder:
   >device-ping-status.lua -- will read /tmp/device-status.out and collect data
 
->gl-router-temp.lua -- Will read /tmp/tempstats.out and collect data
+>gl-router-temp.lua -- Will read /tmp/tempstats.out (written by 15-second-script.sh) and collect data. Installed on GL.iNet devices only (force with GL_TEMP=1 / skip with GL_TEMP=0)
 
 >netify.lua -- Will read /tmp/netify.out and collect data
 

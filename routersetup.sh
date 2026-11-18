@@ -14,6 +14,8 @@
 #   LAN_INTERFACE=vlan10_lan sh ./routersetup.sh 192.168.1.10
 #                                          # force the LAN interface name
 #                                          # (normally detected automatically)
+#   GL_TEMP=1 sh ./routersetup.sh ...      # force (1) or skip (0) the GL.iNet
+#                                          # temperature/fan collector
 #
 # "Home Server" = the Linux machine that runs Docker (Prometheus, Grafana,
 # collectd-exporter). It is NOT the router's own IP.
@@ -51,7 +53,7 @@ for ARG in "$@"; do
     case "$ARG" in
         -y|--yes) ASSUME_YES=1 ;;
         -h|--help)
-            sed -n '2,22p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
+            sed -n '2,24p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *) HOMESERVER="$ARG" ;;
@@ -115,6 +117,13 @@ add_cron() {
         crontab -l 2>/dev/null
         echo "$ENTRY"
     ) | crontab -
+}
+
+# GL.iNet hardware (stock GL firmware or vanilla OpenWrt on a GL device)
+is_glinet() {
+    [ -f /etc/glversion ] && return 0
+    command -v gl_fan >/dev/null 2>&1 && return 0
+    cat /tmp/sysinfo/model /tmp/sysinfo/board_name 2>/dev/null | grep -qiE 'gl\.?inet'
 }
 
 backup_file() {
@@ -385,7 +394,6 @@ for COLLECTOR in \
     packetloss.lua \
     new_device.lua \
     vnstatmonth.lua \
-    gl-router-temp.lua \
     internet-outage.lua \
     dnsmasq.lua \
     uci_dhcp_host.lua
@@ -398,6 +406,28 @@ done
 download_file \
     "${REPO_BASE}/Router/collectd-lua/device-status.lua" \
     "/usr/lib/lua/prometheus-collectors/device-status.lua"
+
+# Temperature / fan collector: GL.iNet routers only (GL_TEMP=1/0 to force)
+GL_TEMP_LUA="/usr/lib/lua/prometheus-collectors/gl-router-temp.lua"
+case "${GL_TEMP:-auto}" in
+    1) INSTALL_GL_TEMP=1 ;;
+    0) INSTALL_GL_TEMP=0 ;;
+    *) if is_glinet; then INSTALL_GL_TEMP=1; else INSTALL_GL_TEMP=0; fi ;;
+esac
+
+if [ "$INSTALL_GL_TEMP" = "1" ]; then
+    download_file "${REPO_BASE}/Router/lua/gl-router-temp.lua" "$GL_TEMP_LUA"
+else
+    if [ "${GL_TEMP:-auto}" = "0" ]; then
+        echo "Skipping gl-router-temp.lua (GL_TEMP=0)"
+    else
+        echo "Skipping gl-router-temp.lua (not a GL.iNet device)"
+    fi
+    if [ -f "$GL_TEMP_LUA" ]; then
+        rm -f "$GL_TEMP_LUA" /tmp/tempstats.out
+        echo "Removed old $GL_TEMP_LUA"
+    fi
+fi
 
 # ------------------------------------------------------------------------------
 # Cron jobs

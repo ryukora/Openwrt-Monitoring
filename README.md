@@ -137,6 +137,12 @@ The LAN interface does not have to be called `lan`. The script asks the router w
 LAN_INTERFACE=vlan10_lan sh ./routersetup.sh 192.168.1.10
 ```
 
+The temperature / fan collector (`gl-router-temp.lua`, Grafana `router_temp` / `router_fan_speed`) is only for **GL.iNet** routers. The script installs it when it detects GL.iNet hardware (`/etc/glversion`, `gl_fan`, or "GL.iNet" in the board name) and skips it on everything else (x86, VMs, other brands). To force it on or off:
+```
+GL_TEMP=1 sh ./routersetup.sh 192.168.1.10    # install anyway
+GL_TEMP=0 sh ./routersetup.sh 192.168.1.10    # skip / remove
+```
+
 You can run the script again at any time, for example to change the Home Server IP or to repair the configuration. It does not create duplicate cron jobs or duplicate collectd servers.
 
 <pre>
@@ -146,6 +152,7 @@ routersetup.sh does the following:
   collectd + modules (rrdtool, network, ping, dhcpleases, lua, ...), luci-app-statistics,
   prometheus-node-exporter-lua + extra collectors
 * Copies the custom scripts to /usr/bin and the Lua collectors to /usr/lib/lua/prometheus-collectors
+  (gl-router-temp.lua only on GL.iNet devices, removed elsewhere)
 * Installs nlbw2collectd (per-device traffic from nlbwmon into collectd)
 * Adds the scripts to crontab
 * Detects the LAN interface (any name, e.g. lan, vlan10_lan) and sets the Prometheus exporter
