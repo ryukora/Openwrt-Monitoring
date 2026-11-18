@@ -120,6 +120,7 @@ The steps are the same for both versions. SSH into the router as root:
 
 ```
 wget https://raw.githubusercontent.com/ryukora/Openwrt-Monitoring/main/routersetup.sh
+chmod +x routersetup.sh
 sh ./routersetup.sh
 ```
 
