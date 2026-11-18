@@ -268,7 +268,29 @@ collectd is not running or not writing RRD files. Usual causes:
 Fix: revert any unsaved LuCI changes (top of the page: *UNSAVED CHANGES* -> Revert), then run `routersetup.sh` again. It repairs all of the above and tests the collectd config. Check with `logread -e collectd`.
 
 **LuCI Firewall plugin: `TypeError: Cannot convert undefined or null to object`**
-Expected on OpenWrt 22.03+ (nftables). Leave the Firewall plugin disabled. See [Extra Configuration](#extra-configuration-for-openwrt).
+Expected on OpenWrt 22.03+ (nftables), both when you tick *Firewall* and when you click *Configure*. The LuCI page lists iptables rules (`iptables-save`), fw4 has none, and the page crashes on the empty list. This is a LuCI limitation, not a problem with this project. Leave the plugin disabled; per-device traffic comes from nlbwmon (`/tmp/rrd/*/nlbwmon-nlbwmon_rx` and `nlbwmon-nlbwmon_tx`).
+If you enabled it with `uci`, turn it off again. Without `collectd-mod-iptables`, collectd will not start at all:
+```
+uci set luci_statistics.collectd_iptables.enable='0'
+uci commit luci_statistics
+/etc/init.d/luci_statistics restart
+```
+
+**`rrdtool plugin: rrd_update_r failed: ... .rrd: Not enough arguments`**
+Harmless. In collectd 5.12 an RRD file can be put in the write queue twice when a flush happens at the same moment as a normal write (for example when collectd restarts after *Save & Apply* in LuCI). The first write stores the values, and the second one has nothing left to write, so rrdtool prints this. No data is lost.
+
+**`rrd_update_r failed: ... opening '....rrd': No such file or directory`**
+Harmless when it shows up once for a file. It happens the first time a new value appears (for example a DNS record type such as `dns_qtype-RRSIG` the first time it is seen) while the file is still being created. If the same file keeps failing every interval, stop collectd, remove the RRD data and start it again (graphs start from zero):
+```
+/etc/init.d/luci_statistics stop
+rm -rf /tmp/rrd/*
+/etc/init.d/luci_statistics start
+```
+
+All collectd messages are logged as `daemon.err` on OpenWrt (even "successfully loaded"), so the level alone does not mean something is wrong.
+
+**`wget: Failed to send request: Operation not permitted` / `curl: (7) Failed to connect to <router-ip>:9100`**
+Nothing listens on port 9100, so the Prometheus exporter is not running. See the next item.
 
 **`Command failed: Not found` / `cat: can't open '/var/run/wrtbwmon.pid'` / `sh: you need to specify whom to kill` during setup**
 From the old script restarting wrtbwmon (iptables-based, doesn't work on nftables). wrtbwmon is not installed by the new script anymore. To remove an old install on 24.10: `opkg remove luci-app-wrtbwmon wrtbwmon; rm -f /usr/sbin/wrtbwmon` (on 25.12 only `rm -f /usr/sbin/wrtbwmon` is needed).
