@@ -77,7 +77,7 @@
 
 Taken screenshot from `OpenWRT-Dashboard-new-2026-11-18.json`.
 
-![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/dashboard-full_2026-11-19.png)
+![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/dashboard-full-new_2026-11-19.png)
 <!--![Grafana Dashboard](https://github.com/ryukora/Openwrt-Monitoring/blob/main/screenshots/dashboard-full-1.png) -->
 
 <br>
